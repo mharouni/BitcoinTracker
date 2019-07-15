@@ -7,13 +7,15 @@
 //
 
 import UIKit
-
-class ViewController: UIViewController {
+import Alamofire
+import SwiftyJSON
+class ViewController: UIViewController, UIPickerViewDataSource, UIPickerViewDelegate {
     
     let baseURL = "https://apiv2.bitcoinaverage.com/indices/global/ticker/BTC"
     let currencyArray = ["AUD", "BRL","CAD","CNY","EUR","GBP","HKD","IDR","ILS","INR","JPY","MXN","NOK","NZD","PLN","RON","RUB","SEK","SGD","USD","ZAR"]
+	let symbolArray = ["$", "R$", "$", "¥", "€", "£", "$", "Rp", "₪", "₹", "¥", "$", "kr", "$", "zł", "lei", "₽", "kr", "$", "$", "R"]
     var finalURL = ""
-
+	
     //Pre-setup IBOutlets
     @IBOutlet weak var bitcoinPriceLabel: UILabel!
     @IBOutlet weak var currencyPicker: UIPickerView!
@@ -22,14 +24,29 @@ class ViewController: UIViewController {
     
     override func viewDidLoad() {
         super.viewDidLoad()
+		currencyPicker.delegate = self
+		currencyPicker.dataSource = self
+		getData(url: baseURL + "AUD", row: 0 )
+		
        
     }
 
     
     //TODO: Place your 3 UIPickerView delegate methods here
     
-    
-    
+	func numberOfComponents(in pickerView: UIPickerView) -> Int {
+		return 1
+	}
+	func pickerView(_ pickerView: UIPickerView, numberOfRowsInComponent component: Int) -> Int {
+		return currencyArray.count
+	}
+	func pickerView(_ pickerView: UIPickerView, titleForRow row: Int, forComponent component: Int) -> String? {
+		return currencyArray[row]
+	}
+	func pickerView(_ pickerView: UIPickerView, didSelectRow row: Int, inComponent component: Int) {
+		finalURL = baseURL + currencyArray[row]
+		getData(url: finalURL, row: row)
+	}
 
     
     
@@ -37,47 +54,48 @@ class ViewController: UIViewController {
 //    
 //    //MARK: - Networking
 //    /***************************************************************/
-//    
-//    func getWeatherData(url: String, parameters: [String : String]) {
-//        
-//        Alamofire.request(url, method: .get, parameters: parameters)
-//            .responseJSON { response in
-//                if response.result.isSuccess {
+	
+	func getData(url: String, row : Int ) {
+		
+        Alamofire.request(url, method: .get)
+            .responseJSON { response in
+                if response.result.isSuccess {
+
+                    print("Sucess! Got the weather data")
+                    let currencyJSON : JSON = JSON(response.result.value!)
+
+					//print(currencyJSON)
+                    self.updateWeatherData(json: currencyJSON, row: row)
+
+                } else {
+                    print("Error: \(String(describing: response.result.error))")
+                    self.bitcoinPriceLabel.text = "Connection Issues"
+                }
+            }
+
+    }
+
+	
+	
+	
 //
-//                    print("Sucess! Got the weather data")
-//                    let weatherJSON : JSON = JSON(response.result.value!)
-//
-//                    self.updateWeatherData(json: weatherJSON)
-//
-//                } else {
-//                    print("Error: \(String(describing: response.result.error))")
-//                    self.bitcoinPriceLabel.text = "Connection Issues"
-//                }
-//            }
-//
-//    }
-//
-//    
-//    
-//    
-//    
 //    //MARK: - JSON Parsing
 //    /***************************************************************/
-//    
-//    func updateWeatherData(json : JSON) {
-//        
-//        if let tempResult = json["main"]["temp"].double {
-//        
-//        weatherData.temperature = Int(round(tempResult!) - 273.15)
-//        weatherData.city = json["name"].stringValue
-//        weatherData.condition = json["weather"][0]["id"].intValue
-//        weatherData.weatherIconName =    weatherData.updateWeatherIcon(condition: weatherData.condition)
-//        }
-//        
-//        updateUIWithWeatherData()
-//    }
-//    
 
+	func updateWeatherData(json : JSON, row : Int) {
+		
+        if let tempResult = json["last"].double {
+				print(tempResult)
+				updateUI(result: Int(tempResult), row: row)
+			
+	        }
+		
+		
+    }
+	
+	func updateUI(result: Int, row : Int) {
+		bitcoinPriceLabel.text =  symbolArray[row] + String(result)
+	}
 
 
 
